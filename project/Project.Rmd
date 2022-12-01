@@ -1,0 +1,188 @@
+---
+title: "Projectaccident"
+output: pdf_document
+date: "2022-11-29"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is a project for US accident.
+
+```{r cars}
+library(sqldf)
+library(DPpack)
+library(ggplot2)
+library(tidyverse)
+library(data.table)
+library(dplyr)
+```
+
+## load data
+
+
+```{r pressure, echo=FALSE}
+data1<-read.csv(file = 'E:/Tufts/CS151/Project/project/US_Accidents_Dec21_updated.csv')
+data1<-as.data.frame(data1)
+head(data1)
+```
+Count the most state
+
+```{r}
+moststate<-sqldf("select state,count(*) from data1 GROUP BY state ORDER BY COUNT(*) DESC LIMIT 1")
+mostroad_count<-moststate$`count(*)`
+```
+
+Pick epilson for the query. And use the built in library funtion LaplaceMechanism to add the noise.
+USE system time to record the runtime for adding the noise.
+```{r}
+epilson <- c(0.0025, 0.005, 0.0075, 0.01, 0.0125)
+runningtime<-array(dim = 5)
+
+noiseresult<-matrix(nrow = 5,ncol =10)
+
+for (x in 1:5) {
+  start_time <- Sys.time() 
+  for (y in 1:10) {
+    noiseresult[x,y]=LaplaceMechanism(mostroad_count, epilson[x], 1)
+  }
+  end_time <- Sys.time()
+  runningtime[x] <-end_time-start_time
+}
+
+noiseresult<-as.data.frame(noiseresult)
+
+colnames(noiseresult)<-c(1:10)
+tranresult<-transpose(noiseresult)
+col.names(tranresult)<-epilson
+print(tranresult)
+runningtime<-as.data.frame(runningtime)
+ggplot(data = runningtime, aes(x = epilson, y = runningtime)) +
+  geom_line()
+```
+
+Calulate error and plot the error use ggplot
+```{r}
+error<-abs(noiseresult-moststate_count)
+error<-rowMeans(error)
+
+errormean<-as.data.frame(error)
+percenterror<-errormean/moststate_count
+
+ggplot(data = errormean, aes(x = epilson, y = error)) +
+  geom_line()
+ggplot(data = percenterror, aes(x = epilson, y = error)) +
+  geom_line()
+
+```
+
+The most dangerous road in US count
+```{r}
+dRoad<-sqldf("SELECT Street, Count(*) FROM data1 GROUP BY Street ORDER BY COUNT(*) DESC LIMIT 1")
+mostroad_count<-dRoad$`Count(*)`
+
+```
+
+```{r}
+epilson <- c(0.02, 0.03, 0.04, 0.05, 0.06)
+runningtime<-array(dim = 5)
+
+noiseresult<-matrix(nrow = 5,ncol =10)
+
+for (x in 1:5) {
+  start_time <- Sys.time() 
+  for (y in 1:10) {
+    noiseresult[x,y]=LaplaceMechanism(mostroad_count, epilson[x], 1)
+  }
+  end_time <- Sys.time()
+  runningtime[x] <-end_time-start_time
+}
+
+noiseresult<-as.data.frame(noiseresult)
+
+colnames(noiseresult)<-c(1:10)
+tranresult<-transpose(noiseresult)
+print(tranresult)
+runningtime<-as.data.frame(runningtime)
+ggplot(data = runningtime, aes(x = epilson, y = runningtime)) +
+  geom_line()
+```
+
+```{r}
+write.csv(noiseresult, file = "example_df2.csv")
+```
+
+```{r}
+
+error<-abs(noiseresult-mostroad_count)
+error<-rowMeans(error)
+
+errormean<-as.data.frame(error)
+percenterror<-errormean/mostroad_count
+
+ggplot(data = errormean, aes(x = epilson, y = error)) +
+  geom_line()
+ggplot(data = percenterror, aes(x = epilson, y = error)) +
+  geom_line()
+
+```
+Severity = 4
+
+
+```{r}
+Severity<-sqldf("SELECT Severity , Count(*) FROM data1 WHERE Severity = 4 And State ='MA' ")
+print(Severity)
+Severity_count<-Severity$'Count(*)'
+```
+pick epilson
+
+```{r}
+epilson <- c(0.03, 0.035, 0.04, 0.045, 0.05)
+runningtime<-array(dim = 5)
+
+noiseresult<-matrix(nrow = 5,ncol =10)
+
+for (x in 1:5) {
+  start_time <- Sys.time() 
+  for (y in 1:10) {
+    noiseresult[x,y]=LaplaceMechanism(Severity_count, epilson[x], 1)
+  }
+  end_time <- Sys.time()
+  runningtime[x] <-end_time-start_time
+}
+
+noiseresult<-as.data.frame(noiseresult)
+
+colnames(noiseresult)<-c(1:10)
+tranresult<-transpose(noiseresult)
+print(tranresult)
+runningtime<-as.data.frame(runningtime)
+ggplot(data = runningtime, aes(x = epilson, y = runningtime)) +
+  geom_line()
+```
+
+```{r}
+error<-abs(noiseresult-Severity_count)
+error<-rowMeans(error)
+
+errormean<-as.data.frame(error)
+percenterror<-errormean/Severity_count
+
+ggplot(data = errormean, aes(x = epilson, y = error)) +
+  geom_line()
+ggplot(data = percenterror, aes(x = epilson, y = error)) +
+  geom_line()
+
+```
+
+```{r}
+write.csv(noiseresult, file = "example_df3.csv")
+```
+
+```{r}
+row.names(noiseresult)<-epilson
+print(noiseresult)
+```
